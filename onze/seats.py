@@ -78,7 +78,7 @@ class RandomBotSeat:
     def receive(self) -> str:
         if 'bid ?' in self.last_message:
             # Implement random bidding logic
-            return str(random.randint(50, 105))
+            return str(random.choice(range(50, 115, 5)))
         
         elif "card ?" in self.last_message:
             # Implement random card playing logic

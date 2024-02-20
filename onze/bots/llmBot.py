@@ -3,25 +3,29 @@
 import requests # For API Calls 
 import math
 import sys
+import os
 from itertools import islice
-OUR_API_KEY = "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"
+from openai import OpenAI
+os.environ['OPENAI_API_KEY'] = "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"
 
 # ask_chatgpt is a function to encapsulate the API call logic
-def ask_chatgpt(prompt, api_key):
-    url = "https://api.openai.com/v1/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": "text-davinci-003",  # Adjust based on current models and  access
-        "prompt": prompt,
-        "max_tokens": 150,  # Adjust based on  needs
-        "temperature": 0.7,  # Adjust for creativity
-    }
-    response = requests.post(url, json=payload, headers=headers)
-    response_json = response.json()
-    return response_json["choices"][0]["text"].strip()
+def ask_chatgpt(prompt):
+    client = OpenAI(
+    # This is the default and can be omitted
+    api_key="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",
+    )
+
+    response = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model="gpt-3.5-turbo",
+    )
+    return response.choices[0].message.content
+
 
 # Card represents a single card
 # Attributes: suit (e.g., "H" for hearts), value (e.g., "T" for ten), and points determined by the card's value.
@@ -242,11 +246,11 @@ while (line := input().split())[0] != "end":
         case "bid":
             if line[1] == "?":
                 # Construct a prompt for bidding
-                prompt = f"Your current hand is {hand.stringify()}. What do you want to bid?"
-                bid_response = ask_chatgpt(prompt, OUR_API_KEY) 
-
+                # prompt = f"Your current hand is {hand.stringify()}. What do you want to bid?"
+                # bid_response = ask_chatgpt(prompt) 
+                print("0")
                 # Process bid_response to extract the bid value
-                print(bid_response)  # Need to parse this response depending on the output
+                #print(bid_response)  # Need to parse this response depending on the output
                 
             else:
                 bid = int(line[2])
@@ -257,9 +261,34 @@ while (line := input().split())[0] != "end":
         case "card":
             if line[1] == "?":
                 # prompt for playing a card
-                prompt = f"Your current hand is {hand.stringify()}, and the current trick is {trick.stringify()}. What card do you want to play?"
-                card_response = ask_chatgpt(prompt, OUR_API_KEY) # Replace with actual API key
-
+                rules_prompt = """
+                You are a player of "10". The game of "10" is played by two teams of two players each. You use a standard deck of cards, but remove all 2s, 3s, 4s, and jokers, leaving 40 cards in the deck. The cards rank from lowest to highest as follows: 5, 6, 7, 8, 9, 10, Jack (J), Queen (Q), King (K), and Ace (A).
+                The goal is to score more points than your team's bid after 10 rounds. Points are earned from cards in won rounds: 10s and Aces are worth 10 points, 5s are worth 5 points, and other cards score nothing.
+                At the start, players sit opposite their partner, and cards are shuffled and dealt, giving each player 10 cards. The player to the left of the dealer bids first, and the highest bidder decides the trump suit and starts the game.
+                Bidding involves predicting the number of points your team will score. Bids must be in multiples of 5, starting at 50 points. The highest bid wins, and that team must meet or exceed their bid to win the round. The maximum bid is 100 points, but a team can bid "the game," meaning they commit to scoring 100 points. If successful, they earn 500 points; if not, they lose 500 points.
+                Scoring is optional. If time allows, keep track of scores on paper, noting which player dealt the cards. Teams can choose names, traditionally "us" and "you," with "us" being the scorekeeper's team. The game ends when a team reaches 500 points. The bidding team scores their collected points if they meet their bid and loses their bid amount if they don't. The defending team scores their collected points under certain conditions. A team can bid "the game" if they have a non-negative score, committing to win all points to win the game. If they fail and lose by at least 5 points, the other team wins.
+                You interact with the game by reading from and writing to the standard input and output streams. The judge will send commands to your bot, and you should respond with commands as described below.
+                The judge will send the following commands to your bot:
+                - "player <id>": The judge is informing you of your player ID, which is an integer from 0 to 3. Your teammate's ID is (id + 2) % 4. You shouldn't respond.
+                - "hand <card1> <card2> ... <card10>": The judge is informing you of your hand, which consists of 10 cards. Each card is a string of two characters, where the first character is the rank (5, 6, 7, 8, 9, T, J, Q, K, A) and the second character is the suit (C, D, H, S). You shouldn't respond.
+                - "bid ?": The judge is asking you to make a bid. You should respond with a single line containing your bid, which must be an integer from 50 to 105 and a multiple of 5.
+                - "card ?": The judge is asking you to play a card. You should respond with a single line containing the card you want to play, which must be one of the cards in your hand.
+                Cards are represented by two characters (e.g. HJ for the Jack of Hearts)
+                    - Suit: C (Clubs), D (Diamonds), H (Hearts), S (Spades)
+                    - Rank: 5, 6, 7, 8, 9, T (10), J (Jack), Q (Queen), K (King), A (Ace)
+                Example:
+                player 3:
+                hand CK CA D8 DK DA H8 HJ HQ ST SQ:
+                bid ?:50
+                card ?:DK
+                card ?:CA
+                card ?:D8
+                card ?:CK
+                card ?:DA
+                """
+                prompt = f"Your current hand is {hand.stringify()}, and the current trick is {trick.stringify()}. What card do you want to play? Provide the two characters corresponding to the card."
+                prompt = rules_prompt + prompt
+                card_response = ask_chatgpt(prompt)
                 # Process card_response to determine which card to play
                 print(card_response)  # Need to parse and format this response
 

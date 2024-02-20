@@ -4,6 +4,7 @@ import requests # For API Calls
 import math
 import sys
 from itertools import islice
+OUR_API_KEY = "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"
 
 # ask_chatgpt is a function to encapsulate the API call logic
 def ask_chatgpt(prompt, api_key):
@@ -242,7 +243,7 @@ while (line := input().split())[0] != "end":
             if line[1] == "?":
                 # Construct a prompt for bidding
                 prompt = f"Your current hand is {hand.stringify()}. What do you want to bid?"
-                bid_response = ask_chatgpt(prompt, OUR_API_KEY) # Replace with actual API key
+                bid_response = ask_chatgpt(prompt, OUR_API_KEY) 
 
                 # Process bid_response to extract the bid value
                 print(bid_response)  # Need to parse this response depending on the output
